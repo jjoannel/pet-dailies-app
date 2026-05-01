@@ -1,0 +1,2938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Care Planner</title>
+  <style>
+    :root {
+      --bg: #f7f1e8;
+      --panel: #fffaf4;
+      --panel-soft: #fffdf9;
+      --line: rgba(78, 57, 31, 0.12);
+      --text: #241d17;
+      --muted: #776b5f;
+      --accent: #2f6f63;
+      --accent-soft: rgba(47, 111, 99, 0.14);
+      --orange: #e8872f;
+      --orange-soft: rgba(232, 135, 47, 0.18);
+      --danger: #9b4e3b;
+      --danger-soft: rgba(155, 78, 59, 0.12);
+      --radius: 20px;
+      --shadow: 0 20px 50px rgba(72, 54, 30, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      background: linear-gradient(135deg, #f7efe4 0%, #f8f3eb 45%, #edf4ec 100%);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+    }
+
+    .shell {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      background: rgba(255, 251, 246, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .frame {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      min-height: 840px;
+    }
+
+    .sidebar {
+      padding: 24px;
+      border-right: 1px solid var(--line);
+      background: rgba(249, 242, 233, 0.82);
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .sidebar-top, .panel-head, .pet-head, .tasks-head, .list-row, .health-header, .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .brand-title {
+      flex: 1;
+      min-width: 0;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 0.95;
+      font-weight: 600;
+    }
+
+    h2 { font-size: 1rem; }
+    h3 { font-size: 0.95rem; }
+
+    .subtitle, .copy, .note, .meta, .empty {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .copy, .subtitle, .note { font-size: 0.93rem; }
+
+    .panel, .editor, .list-card, .pet-switcher-button, .task-card, .modal-card {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      border-radius: var(--radius);
+    }
+
+    .panel, .editor, .modal-card {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .nav-menu, .list-stack, .pet-switcher, .timeline, .tag-list, .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .nav-button, .secondary, .icon-button, .ghost-button, .status-select {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .nav-button, .secondary, .ghost-button {
+      padding: 10px 14px;
+      border-radius: 14px;
+    }
+
+    .nav-button {
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .icon-button.active {
+      background: rgba(79, 162, 92, 0.18);
+      border-color: rgba(79, 162, 92, 0.32);
+      color: #2f7a38;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #f7fbf9;
+      padding: 10px 14px;
+      border-radius: 14px;
+      box-shadow: 0 12px 22px rgba(47, 111, 99, 0.18);
+    }
+
+    .danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid rgba(155, 78, 59, 0.16);
+      padding: 10px 14px;
+      border-radius: 14px;
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .main {
+      padding: 28px;
+      display: grid;
+      gap: 22px;
+      align-content: start;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .view[hidden], .modal[hidden], .health-compose[hidden], .pet-edit-chooser[hidden], .subtabs-panel[hidden] {
+      display: none;
+    }
+
+    .list-header {
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      border-radius: 24px;
+    }
+
+    .list-title-big {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .tasks-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding-bottom: 10px;
+      background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(255, 250, 244, 0.9), rgba(255, 250, 244, 0));
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .task-toolbar { align-items: flex-start; }
+
+    .toolbar.spread {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .list-pet-chip {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+    }
+
+    .timeline {
+      max-height: 560px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .inline-task-composer {
+      margin: 4px 0 12px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.56);
+      display: grid;
+      gap: 12px;
+    }
+
+    .inline-task-composer[hidden] {
+      display: none;
+    }
+
+    .time-slot {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .time-label {
+      font-size: 0.84rem;
+      color: var(--muted);
+      padding-top: 12px;
+    }
+
+    .slot-body {
+      min-height: 48px;
+      padding: 6px 0;
+      display: grid;
+      gap: 8px;
+      border-top: 1px solid rgba(78, 57, 31, 0.08);
+    }
+
+    .task-card {
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .task-card.status-pending {
+      background: rgba(125, 125, 125, 0.12);
+      border-color: rgba(96, 96, 96, 0.2);
+    }
+
+    .task-card.status-completed {
+      background: rgba(79, 162, 92, 0.16);
+      border-color: rgba(79, 162, 92, 0.28);
+    }
+
+    .task-card.status-missed {
+      background: rgba(208, 84, 84, 0.16);
+      border-color: rgba(208, 84, 84, 0.28);
+    }
+
+    .task-card.status-delayed {
+      background: rgba(226, 189, 83, 0.22);
+      border-color: rgba(226, 189, 83, 0.34);
+    }
+
+    .task-card.reorder-enabled {
+      cursor: grab;
+    }
+
+    .task-card.dragging {
+      opacity: 0.52;
+      box-shadow: 0 18px 28px rgba(72, 54, 30, 0.16);
+    }
+
+    .task-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .task-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .task-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .status-select {
+      width: auto;
+      max-width: max-content;
+      min-width: 0;
+      padding: 7px 28px 7px 11px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      font-size: 0.82rem;
+    }
+
+    .field, .field-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 249, 0.96);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 13px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+    }
+
+    .pet-summary {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar-editor {
+      position: relative;
+      display: inline-flex;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .pet-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(47, 111, 99, 0.18), rgba(232, 135, 47, 0.24));
+      color: var(--accent);
+      font-weight: 600;
+      border: 1px solid rgba(47, 111, 99, 0.12);
+      flex-shrink: 0;
+    }
+
+    .pet-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .avatar-edit-badge {
+      position: absolute;
+      right: -2px;
+      bottom: -2px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.98);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 18px rgba(72, 54, 30, 0.12);
+    }
+
+    .pet-switcher-button, .list-card {
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .pet-switcher-button.active, .list-card.active {
+      border-color: rgba(47, 111, 99, 0.24);
+      box-shadow: 0 10px 22px rgba(47, 111, 99, 0.08);
+    }
+
+    .pet-switcher.scrollable {
+      max-height: 312px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .tab-row, .subtab-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .health-panel {
+      margin-top: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.42);
+      overflow: hidden;
+    }
+
+    .health-header {
+      padding: 14px 16px;
+      background: var(--orange-soft);
+      border-bottom: 1px solid rgba(232, 135, 47, 0.14);
+    }
+
+    .health-header strong {
+      color: #9c5a16;
+      font-size: 0.92rem;
+    }
+
+    .health-body {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .health-list-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .health-compose {
+      display: grid;
+      gap: 10px;
+    }
+
+    .health-compose-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px 40px auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .health-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.54);
+      border-radius: 16px;
+    }
+
+    .health-copy span, .pet-small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 4px;
+    }
+
+    .food-row, .med-row {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.54);
+      align-items: start;
+    }
+
+    .food-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .food-main-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(170px, 0.9fr) 40px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .food-save-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .food-add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 40px;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .food-header-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(170px, 0.9fr) 40px;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .med-table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .med-sticky-head {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: grid;
+      gap: 10px;
+      padding-bottom: 8px;
+      background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(255, 250, 244, 0.94), rgba(255, 250, 244, 0));
+    }
+
+    .med-row {
+      grid-template-columns: minmax(0, 1fr);
+      background: rgba(232, 135, 47, 0.12);
+      border-color: rgba(232, 135, 47, 0.22);
+    }
+
+    .med-row[hidden] {
+      display: none;
+    }
+
+    #newMedicationComposer {
+      background: rgba(79, 162, 92, 0.12);
+      border-color: rgba(79, 162, 92, 0.22);
+    }
+
+    .med-row textarea {
+      min-height: 78px;
+      height: 78px;
+      resize: vertical;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .med-main-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) 40px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .duration-range {
+      display: grid;
+      gap: 8px;
+    }
+
+    .duration-range-shell {
+      display: grid;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 249, 0.96);
+      border-radius: 14px;
+    }
+
+    .duration-range-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .duration-range-shell input {
+      padding: 10px 11px;
+    }
+
+    .med-assign-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 140px 110px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .med-actions-stack {
+      display: grid;
+      gap: 10px;
+      justify-items: stretch;
+    }
+
+    .history-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .history-toolbar .toolbar {
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+
+    .med-toolbar {
+      margin-bottom: 10px;
+      justify-content: flex-end;
+    }
+
+    .med-toolbar.med-sticky-head {
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(79, 162, 92, 0.22);
+      background: rgba(79, 162, 92, 0.12);
+    }
+
+    .assigned-summary {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .history-select-row {
+      display: flex;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .menu-wrap {
+      position: relative;
+      align-self: start;
+    }
+
+    .menu-button {
+      background: rgba(239, 239, 239, 0.98);
+    }
+
+    .disabled-pane input:disabled,
+    .disabled-pane select:disabled,
+    .disabled-pane textarea:disabled,
+    .disabled-pane button:disabled {
+      cursor: not-allowed;
+    }
+
+    .action-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      z-index: 5;
+      min-width: 190px;
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 16px;
+      background: rgba(255, 252, 247, 0.98);
+      border: 1px solid rgba(78, 57, 31, 0.1);
+      box-shadow: 0 18px 30px rgba(72, 54, 30, 0.12);
+    }
+
+    .action-menu[hidden] {
+      display: none;
+    }
+
+    .action-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .suggestions {
+      display: grid;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .suggestion-chip {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .history-card {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(78, 57, 31, 0.08);
+      background: rgba(255, 255, 255, 0.54);
+      display: grid;
+      gap: 8px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(36, 29, 23, 0.28);
+      backdrop-filter: blur(8px);
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .modal-card {
+      width: min(560px, 100%);
+      background: rgba(255, 252, 247, 0.98);
+      box-shadow: var(--shadow);
+    }
+
+    .empty {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px dashed rgba(78, 57, 31, 0.16);
+      background: rgba(255, 255, 255, 0.34);
+    }
+
+    @media (max-width: 980px) {
+      .frame { grid-template-columns: 1fr; }
+      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .shell { border-radius: 22px; }
+      .sidebar, .main { padding: 18px; }
+      .field-grid, .time-slot, .food-row, .med-row, .health-compose-row { grid-template-columns: 1fr; }
+      .time-label { padding-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="frame">
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand-mark"><img src="paw-plus-logo.svg" alt="Pet Care logo"></div>
+          <div class="brand-title">
+            <h1>Pet Dailies</h1>
+          </div>
+        </div>
+
+        <div>
+          <p class="subtitle">Track schedules, pet details, medical context, and older care history in one place.</p>
+        </div>
+
+        <section class="panel">
+          <div class="pet-head">
+            <h2>Pet profile</h2>
+            <button class="icon-button" id="managePetButton" type="button" aria-label="Manage pet profiles">&#9998;</button>
+          </div>
+          <p class="copy">Choose which pet profile you want to review or update.</p>
+          <div class="pet-switcher" id="petSwitcher"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Care lists</h2>
+            <div class="toolbar">
+              <button class="icon-button" id="openEditListButton" type="button" aria-label="Edit care list">&#9998;</button>
+              <button class="icon-button" id="openCreateListButton" type="button" aria-label="Create list">+</button>
+            </div>
+          </div>
+          <div class="list-stack" id="listStack"></div>
+        </section>
+
+      </aside>
+
+      <section class="main">
+        <div class="view" id="plannerView">
+          <section class="list-header">
+            <div class="list-title-big" id="activeListTitle">No list selected</div>
+            <p class="meta" id="activeListMeta">Create a pet care list to begin.</p>
+            <div id="activeListPetChip"></div>
+          </section>
+
+          <section class="editor">
+            <div class="tasks-head">
+              <div>
+                <h2>Scheduled Tasks</h2>
+              </div>
+              <div class="toolbar task-toolbar">
+                <button class="icon-button" id="toggleReorderButton" type="button" aria-label="Toggle reorder mode">&#8645;</button>
+                <button class="icon-button" id="openAddTaskButton" type="button" aria-label="Expand add task form"><span id="taskComposerToggleIcon">+</span></button>
+              </div>
+            </div>
+            <div class="inline-task-composer" id="inlineTaskComposer" hidden>
+              <div class="field">
+                <label for="taskInput">Task details</label>
+                <textarea id="taskInput" placeholder="Give medicine after breakfast&#10;Refresh water bowl&#10;Brush coat"></textarea>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="taskTimeInput">Specified time</label>
+                  <input id="taskTimeInput" type="time">
+                </div>
+                <div class="field">
+                  <label for="taskRepeatInput">Repeat task</label>
+                  <select id="taskRepeatInput">
+                    <option value="">Does not repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
+                </div>
+              </div>
+              <div class="toolbar">
+                <button class="primary" id="saveTaskButton" type="button">Add tasks</button>
+              </div>
+            </div>
+            <p class="note" id="statusMessage"></p>
+            <div class="timeline" id="taskTimeline"></div>
+          </section>
+        </div>
+
+        <div class="view" id="profilesView" hidden>
+          <section class="editor">
+            <div>
+              <h2>Pet Profile Settings</h2>
+              <p class="copy">Update the selected pet's identity, health, food, and medications.</p>
+            </div>
+
+            <div class="pet-summary" id="profileHero"></div>
+
+            <div class="tab-row">
+              <button class="secondary tab-button active" data-profile-tab="info" type="button">Info</button>
+              <button class="secondary tab-button" data-profile-tab="food" type="button">Food details</button>
+              <button class="secondary tab-button" data-profile-tab="medication" type="button">Medication details</button>
+            </div>
+
+            <div id="profileInfoTab">
+              <div class="field-grid">
+                <div class="field">
+                  <label for="petName">Name</label>
+                  <input id="petName" type="text" placeholder="Luna">
+                </div>
+                <div class="field">
+                  <label for="petAge">Age</label>
+                  <select id="petAge"></select>
+                </div>
+                <div class="field">
+                  <label for="petWeight">Weight</label>
+                  <select id="petWeight"></select>
+                </div>
+                <div class="field">
+                  <label for="petHeight">Height</label>
+                  <input id="petHeight" type="text" placeholder="23 in">
+                </div>
+                <div class="field">
+                  <label for="petSpecies">Species</label>
+                  <select id="petSpecies">
+                    <option value="dog">Dog</option>
+                    <option value="cat">Cat</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="petBreed">Breed</label>
+                  <input id="petBreed" type="text" list="breedSuggestions" placeholder="Start typing a breed">
+                </div>
+                <div class="field">
+                  <label for="petSterilization">Sterilization</label>
+                  <select id="petSterilization">
+                    <option value="not sterilized">Not sterilized</option>
+                    <option value="sterilized">Sterilized</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="petAllergens">Allergens</label>
+                  <input id="petAllergens" type="text" placeholder="Chicken, dairy, pollen">
+                </div>
+                <div class="field">
+                  <label for="petFurColor">Fur color</label>
+                  <input id="petFurColor" type="text" placeholder="Golden">
+                </div>
+                <div class="field">
+                  <label for="petEyeColor">Eye color</label>
+                  <input id="petEyeColor" type="text" placeholder="Brown">
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="petTemperament">Temperament</label>
+                <textarea id="petTemperament" placeholder="Friendly, alert, food-motivated"></textarea>
+              </div>
+
+              <div class="health-panel" id="healthPanel">
+                <div class="health-header">
+                  <strong>Current Health Condition</strong>
+                  <button class="icon-button" id="toggleHealthComposerButton" type="button" aria-label="Add condition"><span id="healthComposerToggleIcon">+</span></button>
+                </div>
+                <div class="health-body">
+                  <div class="health-compose" id="healthComposer" hidden>
+                    <div class="health-compose-row">
+                      <div class="field">
+                        <label for="petHealth">Condition</label>
+                        <input id="petHealth" type="text" list="healthSuggestions" placeholder="Arthritis, allergies, CKD, dermatitis">
+                      </div>
+                      <div class="field">
+                        <label for="petHealthDate">Diagnosis date</label>
+                        <input id="petHealthDate" type="date">
+                      </div>
+                      <button class="primary icon-button" id="saveHealthButton" type="button" aria-label="Save condition" title="Save condition">
+                        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3.5 2.5H10.5L12.5 4.5V13.5H3.5V2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                          <path d="M5 2.5V6H10V2.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                          <path d="M5.5 10.5H10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <button class="danger" id="deleteHealthButton" type="button" hidden>Delete</button>
+                    </div>
+                    <div class="field">
+                      <label for="petHealthNotes">Notes</label>
+                      <textarea id="petHealthNotes" placeholder="Notes about symptoms, treatment context, or monitoring"></textarea>
+                    </div>
+                    <p class="note">Suggestions adapt to the selected species and breed.</p>
+                  </div>
+                  <div class="tag-list health-list-scroll" id="healthList"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="profileFoodTab" hidden>
+              <div class="food-add-row">
+                <div class="field">
+                  <label for="newFoodName">Current food</label>
+                  <input id="newFoodName" type="text" list="foodSuggestions" placeholder="Kibble, wet food, prescription diet">
+                </div>
+                <button class="primary icon-button" id="addFoodButton" type="button" aria-label="Add food">+</button>
+              </div>
+              <div class="food-header-row">
+                <span>Food</span>
+                <span>Amount</span>
+                <span>Assign to List</span>
+                <span></span>
+              </div>
+              <div class="tag-list" id="foodList"></div>
+            </div>
+
+            <div id="profileMedicationTab" hidden>
+              <div class="med-sticky-head">
+                <div class="subtab-row">
+                  <button class="secondary tab-button active" data-med-tab="current" type="button">Current</button>
+                  <button class="secondary tab-button" data-med-tab="history" type="button">History</button>
+                </div>
+              </div>
+              <div id="currentMedicationPanel" class="subtabs-panel">
+                <div class="toolbar med-toolbar med-sticky-head">
+                  <button class="primary icon-button" id="addMedicationButton" type="button" aria-label="Add medication"><span id="medComposerToggleIcon">+</span></button>
+                </div>
+                <div class="med-table">
+                  <div class="med-row" id="newMedicationComposer" hidden>
+                    <div class="med-main-row">
+                      <div class="field">
+                        <label>Medication Name</label>
+                        <textarea id="newMedicationName" placeholder="Medication name"></textarea>
+                        <div class="suggestions-host" id="newMedicationNameSuggestions"></div>
+                      </div>
+                      <div class="field">
+                        <label>Dosage</label>
+                        <textarea id="newMedicationDosage" placeholder="Custom dosage"></textarea>
+                        <div class="suggestions-host" id="newMedicationDosageSuggestions"></div>
+                      </div>
+                      <div class="field duration-range">
+                        <label>Duration</label>
+                        <div class="duration-range-shell">
+                          <div class="duration-range-row">
+                            <input id="newMedicationDurationStart" type="date">
+                            <input id="newMedicationDurationEnd" type="date">
+                          </div>
+                        </div>
+                      </div>
+                      <div></div>
+                    </div>
+                    <div class="field">
+                      <label>Instructions</label>
+                      <textarea id="newMedicationInstructions" placeholder="Administration instructions"></textarea>
+                      <div class="suggestions-host" id="newMedicationInstructionsSuggestions"></div>
+                    </div>
+                    <div class="field">
+                      <label>Purpose</label>
+                      <textarea id="newMedicationPurpose" placeholder="Purpose"></textarea>
+                      <div class="suggestions-host" id="newMedicationPurposeSuggestions"></div>
+                    </div>
+                    <div class="med-assign-row">
+                      <div class="field">
+                        <label>Assign to List</label>
+                        <select id="newMedicationAssignedList"></select>
+                      </div>
+                      <div class="med-actions-stack">
+                        <button class="primary" id="saveNewMedicationButton" type="button">Add Medication</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tag-list" id="medicationRows"></div>
+                </div>
+              </div>
+              <div id="historyMedicationPanel" class="subtabs-panel" hidden>
+                <div class="history-toolbar">
+                  <p class="copy">This is a historical log of inactive treatments.</p>
+                  <div class="toolbar">
+                    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;color:var(--text);font-size:0.92rem;white-space:nowrap;">
+                      <input id="selectAllHistoryMedication" type="checkbox">
+                      <span>Select all</span>
+                    </label>
+                    <button class="secondary" id="exportHistoryMedicationButton" type="button">Export</button>
+                    <button class="primary" id="deleteHistoryMedicationButton" type="button">Delete</button>
+                  </div>
+                </div>
+                <div class="history-list" id="historyMedicationList"></div>
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <button class="primary" id="saveProfileButton" type="button">Save</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="view" id="historyView" hidden>
+          <section class="editor">
+            <div>
+              <h2>Historical Lists</h2>
+              <p class="copy">Past lists appear here once their date is earlier than today.</p>
+            </div>
+            <div class="history-list" id="historyList"></div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal" id="createListModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Create list</h2>
+        <button class="icon-button" data-close-modal="createListModal" type="button">x</button>
+      </div>
+      <div class="field">
+        <label for="newListTitle">Title</label>
+        <input id="newListTitle" type="text" placeholder="Morning care for Luna">
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="newListPet">Pet</label>
+          <select id="newListPet"></select>
+        </div>
+        <div class="field">
+          <label for="newListDate">Start Date</label>
+          <input id="newListDate" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="newListEndDate">End date</label>
+        <input id="newListEndDate" type="date">
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="createListButton" type="button">Create list</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="editListModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Edit care list</h2>
+        <button class="icon-button" data-close-modal="editListModal" type="button">x</button>
+      </div>
+      <div class="field">
+        <label for="editListSelect">Care list</label>
+        <select id="editListSelect"></select>
+      </div>
+      <div class="field">
+        <label for="editListTitle">Title</label>
+        <input id="editListTitle" type="text" placeholder="Morning care for Luna">
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="editListPet">Pet</label>
+          <select id="editListPet"></select>
+        </div>
+        <div class="field">
+          <label for="editListStartDate">Start Date</label>
+          <input id="editListStartDate" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="editListEndDate">End date</label>
+        <input id="editListEndDate" type="date">
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="saveEditListButton" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="petPhotoModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Update pet photo</h2>
+        <button class="icon-button" data-close-modal="petPhotoModal" type="button">x</button>
+      </div>
+      <div class="field">
+        <label for="petPhotoUpload">Upload image</label>
+        <input id="petPhotoUpload" type="file" accept="image/*">
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="savePetPhotoButton" type="button">Save photo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="managePetModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Pet profile options</h2>
+        <button class="icon-button" data-close-modal="managePetModal" type="button">x</button>
+      </div>
+      <p class="copy">Add a new pet, jump into the selected profile, or remove the current one.</p>
+      <div class="toolbar">
+        <button class="primary" id="createPetProfileButton" type="button">Add pet</button>
+        <button class="secondary" id="editPetProfileButton" type="button">Edit profile</button>
+        <button class="danger" id="deletePetProfileButton" type="button">Delete profile</button>
+      </div>
+      <div class="field pet-edit-chooser" id="editProfileChooser" hidden>
+        <label for="editProfileSelect">Choose pet profile</label>
+        <select id="editProfileSelect"></select>
+        <div class="toolbar">
+          <button class="primary" id="confirmEditProfileButton" type="button">Open profile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="assignModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="assignTitle">Assign to care list</h2>
+        <button class="icon-button" data-close-modal="assignModal" type="button">x</button>
+      </div>
+      <div class="field">
+        <label for="assignListSelect">Care list</label>
+        <select id="assignListSelect"></select>
+      </div>
+      <div class="field">
+        <label for="assignTaskPreview">Task preview</label>
+        <textarea id="assignTaskPreview"></textarea>
+      </div>
+      <div class="field">
+        <label for="assignTaskTime">Set time</label>
+        <input id="assignTaskTime" type="time">
+      </div>
+      <div class="toolbar">
+        <button class="primary" id="confirmAssignButton" type="button">Assign</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="breedSuggestions"></datalist>
+  <datalist id="foodSuggestions"></datalist>
+  <datalist id="amountSuggestions"></datalist>
+  <datalist id="healthSuggestions"></datalist>
+
+  <script>
+    const STORAGE_KEY = "pet-care-planner-recovered-v1";
+    const TIME_SLOTS = [
+      "anytime",
+      ...Array.from({ length: 19 }, (_, i) => `${String(i + 5).padStart(2, "0")}:00`),
+      ...Array.from({ length: 5 }, (_, i) => `${String(i).padStart(2, "0")}:00`)
+    ];
+    const SPECIES = {
+      purposeCategories: [
+        "Allergies & Itching",
+        "Anxiety & Sedation",
+        "Cardiovascular",
+        "Diabetes",
+        "Diarrhea",
+        "Fleas & Ticks",
+        "Gastrointestinal",
+        "Heartworms",
+        "IBD",
+        "Infections",
+        "Nausea & Vomiting",
+        "Pain & Arthritis",
+        "Seizures",
+        "Stomach Ulcers",
+        "Other"
+      ],
+      dog: {
+        ages: ["Puppy (0-4 months)", "Puppy (5 months - 1 year)", "Junior", "Adult (1-7 years)", "Mature (7-12 years)", "Senior 12+"],
+        weights: ["Under 10 lb", "10-24 lb", "25-49 lb", "50-74 lb", "75-99 lb", "100+ lb"],
+        breeds: ["Golden Retriever", "Labrador Retriever", "French Bulldog", "Poodle", "German Shepherd Dog", "Corgi", "Cavalier King Charles Spaniel"],
+        foods: ["Chicken kibble", "Salmon kibble", "Sensitive stomach formula", "Wet loaf formula"],
+        foodAmounts: ["1/4 cup", "1/2 cup", "3/4 cup", "1 cup", "1 can"],
+        health: ["Arthritis", "Allergies", "Dermatitis", "GI sensitivity", "Heart murmur", "Diabetes mellitus"],
+        meds: ["Apoquel", "Carprofen", "Cerenia", "Gabapentin", "Omeprazole", "Prednisone"],
+        doses: ["1 tablet", "1/2 tablet", "5 mg", "10 mg", "0.5 mL", "1 mL"],
+        instructions: ["With food", "After breakfast", "After dinner", "Give by mouth", "As needed"],
+        purposes: []
+      },
+      cat: {
+        ages: ["Kitten 0-1 year", "Adult 1-7 years", "Mature 7-12 years", "Senior 12+"],
+        weights: ["Under 5 lb", "5-8 lb", "9-12 lb", "13-16 lb", "17+ lb"],
+        breeds: ["Scottish Fold", "Domestic Shorthair", "Maine Coon", "Ragdoll", "Siamese", "Persian"],
+        foods: ["Indoor hairball formula", "Urinary care wet food", "Senior renal support diet", "High-protein salmon kibble"],
+        foodAmounts: ["1/8 cup", "1/4 cup", "1/3 cup", "1/2 cup", "1 can"],
+        health: ["CKD", "Hyperthyroidism", "IBD", "Urinary crystals", "Asthma", "Arthritis"],
+        meds: ["Amlodipine", "Gabapentin", "Methimazole", "Mirtazapine", "Prednisolone", "Omeprazole"],
+        doses: ["1 tablet", "1/2 tablet", "2.5 mg", "5 mg", "0.25 mL", "0.5 mL"],
+        instructions: ["With food", "Give by mouth", "After meals", "At bedtime", "As needed"],
+        purposes: []
+      }
+    };
+
+    const defaultState = {
+      activeView: "planner",
+      activePetId: "pet-luna",
+      activeListId: null,
+      navOpen: false,
+      pets: [
+        {
+          id: "pet-luna",
+          name: "Luna",
+          species: "cat",
+          photo: "luna-scottish-fold.svg",
+          age: "",
+          weight: "",
+          height: "",
+        breed: "Scottish Fold",
+        furColor: "",
+        eyeColor: "",
+        sterilization: "not sterilized",
+        tabLocks: { info: false, food: false, medication: false },
+        temperament: "",
+        allergens: "",
+          foods: [],
+          healthConditions: [],
+          medications: [{ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" }],
+          medicationHistory: []
+        }
+      ],
+      lists: []
+    };
+
+    const state = loadState();
+    let activeProfileTab = "info";
+    let activeMedicationTab = "current";
+    let pendingPetPhoto = "";
+    let pendingAssignment = null;
+    let healthEditor = { open: false, index: null };
+    let medSuggestion = null;
+    let reorderMode = false;
+    let dragTaskId = null;
+    let addTaskOpen = false;
+    let medComposerOpen = false;
+    let medicationEditIndex = null;
+
+    const el = {
+      activeListTitle: byId("activeListTitle"),
+      activeListMeta: byId("activeListMeta"),
+      activeListPetChip: byId("activeListPetChip"),
+      statusMessage: byId("statusMessage"),
+      listStack: byId("listStack"),
+      petSwitcher: byId("petSwitcher"),
+      taskTimeline: byId("taskTimeline"),
+      inlineTaskComposer: byId("inlineTaskComposer"),
+      taskComposerToggleIcon: byId("taskComposerToggleIcon"),
+      historyList: byId("historyList"),
+      profileHero: byId("profileHero"),
+      profileInfoTab: byId("profileInfoTab"),
+      profileFoodTab: byId("profileFoodTab"),
+      profileMedicationTab: byId("profileMedicationTab"),
+      currentMedicationPanel: byId("currentMedicationPanel"),
+      historyMedicationPanel: byId("historyMedicationPanel"),
+      petSpecies: byId("petSpecies"),
+      petName: byId("petName"),
+      petAge: byId("petAge"),
+      petWeight: byId("petWeight"),
+      petHeight: byId("petHeight"),
+      petBreed: byId("petBreed"),
+      petSterilization: byId("petSterilization"),
+      petFurColor: byId("petFurColor"),
+      petEyeColor: byId("petEyeColor"),
+      petAllergens: byId("petAllergens"),
+      petTemperament: byId("petTemperament"),
+      healthComposer: byId("healthComposer"),
+      healthComposerToggleIcon: byId("healthComposerToggleIcon"),
+      petHealth: byId("petHealth"),
+      petHealthDate: byId("petHealthDate"),
+      petHealthNotes: byId("petHealthNotes"),
+      healthList: byId("healthList"),
+      taskInput: byId("taskInput"),
+      taskTimeInput: byId("taskTimeInput"),
+      taskRepeatInput: byId("taskRepeatInput"),
+      deleteHealthButton: byId("deleteHealthButton"),
+      selectAllHistoryMedication: byId("selectAllHistoryMedication"),
+      exportHistoryMedicationButton: byId("exportHistoryMedicationButton"),
+      deleteHistoryMedicationButton: byId("deleteHistoryMedicationButton"),
+      newFoodName: byId("newFoodName"),
+      foodList: byId("foodList"),
+      medComposerToggleIcon: byId("medComposerToggleIcon"),
+      newMedicationComposer: byId("newMedicationComposer"),
+      newMedicationName: byId("newMedicationName"),
+      newMedicationDosage: byId("newMedicationDosage"),
+      newMedicationDurationStart: byId("newMedicationDurationStart"),
+      newMedicationDurationEnd: byId("newMedicationDurationEnd"),
+      newMedicationInstructions: byId("newMedicationInstructions"),
+      newMedicationPurpose: byId("newMedicationPurpose"),
+      newMedicationAssignedList: byId("newMedicationAssignedList"),
+      saveNewMedicationButton: byId("saveNewMedicationButton"),
+      medicationRows: byId("medicationRows"),
+      historyMedicationList: byId("historyMedicationList"),
+      breedSuggestions: byId("breedSuggestions"),
+      foodSuggestions: byId("foodSuggestions"),
+      amountSuggestions: byId("amountSuggestions"),
+      healthSuggestions: byId("healthSuggestions"),
+      newListTitle: byId("newListTitle"),
+      newListPet: byId("newListPet"),
+      newListDate: byId("newListDate"),
+      newListEndDate: byId("newListEndDate"),
+      openEditListButton: byId("openEditListButton"),
+      editListSelect: byId("editListSelect"),
+      editListTitle: byId("editListTitle"),
+      editListPet: byId("editListPet"),
+      editListStartDate: byId("editListStartDate"),
+      editListEndDate: byId("editListEndDate"),
+      petPhotoUpload: byId("petPhotoUpload"),
+      editProfileChooser: byId("editProfileChooser"),
+      editProfileSelect: byId("editProfileSelect"),
+      assignTitle: byId("assignTitle"),
+      assignListSelect: byId("assignListSelect"),
+      assignTaskPreview: byId("assignTaskPreview"),
+      assignTaskTime: byId("assignTaskTime"),
+      plannerView: byId("plannerView"),
+      profilesView: byId("profilesView"),
+      historyView: byId("historyView")
+    };
+
+    function byId(id) { return document.getElementById(id); }
+
+    function uid() {
+      return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function today() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return structuredClone(defaultState);
+        const parsed = JSON.parse(saved);
+        return normalizeState(parsed);
+      } catch {
+        return structuredClone(defaultState);
+      }
+    }
+
+    function normalizeState(raw) {
+      const next = structuredClone(defaultState);
+      next.activeView = ["planner", "profiles", "history"].includes(raw.activeView) ? raw.activeView : "planner";
+      next.activeListId = typeof raw.activeListId === "string" ? raw.activeListId : null;
+      next.activePetId = typeof raw.activePetId === "string" ? raw.activePetId : "pet-luna";
+      next.navOpen = Boolean(raw.navOpen);
+      next.pets = Array.isArray(raw.pets) && raw.pets.length ? raw.pets.map((pet, index) => ({
+        id: typeof pet.id === "string" ? pet.id : `pet-${index + 1}`,
+        name: typeof pet.name === "string" && pet.name.trim() ? pet.name.trim() : `Pet ${index + 1}`,
+        species: pet.species === "dog" ? "dog" : "cat",
+        photo: typeof pet.photo === "string" && pet.photo ? pet.photo : (index === 0 ? "luna-scottish-fold.svg" : ""),
+        age: typeof pet.age === "string" ? pet.age : "",
+        weight: typeof pet.weight === "string" ? pet.weight : "",
+        height: typeof pet.height === "string" ? pet.height : "",
+        breed: typeof pet.breed === "string" ? pet.breed : "",
+        furColor: typeof pet.furColor === "string" ? pet.furColor : "",
+        eyeColor: typeof pet.eyeColor === "string" ? pet.eyeColor : "",
+        sterilization: typeof pet.sterilization === "string" ? pet.sterilization : "not sterilized",
+        tabLocks: {
+          info: Boolean(pet.tabLocks?.info),
+          food: Boolean(pet.tabLocks?.food),
+          medication: Boolean(pet.tabLocks?.medication)
+        },
+        temperament: typeof pet.temperament === "string" ? pet.temperament : "",
+        allergens: typeof pet.allergens === "string" ? pet.allergens : "",
+        foods: Array.isArray(pet.foods) ? pet.foods.map((item) => ({
+          name: typeof item?.name === "string" ? item.name : "",
+          amount: typeof item?.amount === "string" ? item.amount : "",
+          instructions: typeof item?.instructions === "string" ? item.instructions : "",
+          assignedListId: typeof item?.assignedListId === "string" ? item.assignedListId : ""
+        })).filter((item) => item.name) : [],
+        healthConditions: Array.isArray(pet.healthConditions) ? pet.healthConditions.map((item) => ({
+          name: typeof item?.name === "string" ? item.name : "",
+          diagnosisDate: typeof item?.diagnosisDate === "string" ? item.diagnosisDate : "",
+          notes: typeof item?.notes === "string" ? item.notes : ""
+        })).filter((item) => item.name) : [],
+        medications: Array.isArray(pet.medications) && pet.medications.length ? pet.medications.map((item) => ({
+          name: typeof item?.name === "string" ? item.name : "",
+          dosage: typeof item?.dosage === "string" ? item.dosage : "",
+          durationStart: typeof item?.durationStart === "string" ? item.durationStart : "",
+          durationEnd: typeof item?.durationEnd === "string" ? item.durationEnd : "",
+          assignedListId: typeof item?.assignedListId === "string" ? item.assignedListId : "",
+          assignedTime: typeof item?.assignedTime === "string" ? item.assignedTime : "",
+          instructions: typeof item?.instructions === "string" ? item.instructions : "",
+          purpose: typeof item?.purpose === "string" ? item.purpose : ""
+        })) : [{ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" }],
+        medicationHistory: Array.isArray(pet.medicationHistory) ? pet.medicationHistory.map((item) => ({
+          name: typeof item?.name === "string" ? item.name : "",
+          dosage: typeof item?.dosage === "string" ? item.dosage : "",
+          durationStart: typeof item?.durationStart === "string" ? item.durationStart : "",
+          durationEnd: typeof item?.durationEnd === "string" ? item.durationEnd : "",
+          instructions: typeof item?.instructions === "string" ? item.instructions : "",
+          purpose: typeof item?.purpose === "string" ? item.purpose : "",
+          selected: Boolean(item?.selected),
+          retiredAt: typeof item?.retiredAt === "string" ? item.retiredAt : today()
+        })) : []
+      })) : structuredClone(defaultState.pets);
+      next.lists = Array.isArray(raw.lists) ? raw.lists.map((list) => ({
+        id: typeof list.id === "string" ? list.id : uid(),
+        title: typeof list.title === "string" && list.title.trim() ? list.title.trim() : "Untitled care list",
+        date: typeof list.date === "string" && list.date ? list.date : today(),
+        dateEnd: typeof list.dateEnd === "string" ? list.dateEnd : "",
+        petId: typeof list.petId === "string" ? list.petId : next.activePetId,
+        tasks: Array.isArray(list.tasks) ? list.tasks.map((task, index) => ({
+          id: typeof task.id === "string" ? task.id : uid(),
+          text: typeof task.text === "string" ? task.text : "",
+          status: ["pending", "completed", "missed", "delayed"].includes(task.status) ? task.status : "pending",
+          time: typeof task.time === "string" ? task.time : "",
+          repeat: typeof task.repeat === "string" ? task.repeat : "",
+          order: Number.isFinite(task.order) ? task.order : index + 1
+        })).filter((task) => task.text.trim()) : []
+      })) : [];
+      return next;
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const hash = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      history.replaceState(null, "", `#${hash}`);
+    }
+
+    function currentPet() {
+      return state.pets.find((pet) => pet.id === state.activePetId) || state.pets[0];
+    }
+
+    function visibleLists() {
+      return state.lists.filter((list) => list.petId === state.activePetId);
+    }
+
+    function currentList() {
+      const lists = visibleLists();
+      return lists.find((list) => list.id === state.activeListId) || lists[0] || null;
+    }
+
+    function petById(id) {
+      return state.pets.find((pet) => pet.id === id) || null;
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function formatDateRange(start, end = "") {
+      if (!start) return "";
+      if (!end || end === start) return formatDate(start);
+      const startDate = new Date(`${start}T12:00:00`);
+      const endDate = new Date(`${end}T12:00:00`);
+      const sameYear = startDate.getFullYear() === endDate.getFullYear();
+      const sameMonth = sameYear && startDate.getMonth() === endDate.getMonth();
+      if (sameMonth) {
+        return `${startDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}-${endDate.toLocaleDateString(undefined, { day: "numeric", year: "numeric" })}`;
+      }
+      if (sameYear) {
+        return `${startDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })} - ${endDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+      }
+      return `${formatDate(start)} - ${formatDate(end)}`;
+    }
+
+    function formatTime(value) {
+      if (!value) return "";
+      const [h, m] = value.split(":");
+      const date = new Date();
+      date.setHours(Number(h), Number(m), 0, 0);
+      return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    }
+
+    function slotLabel(slot) {
+      return slot === "anytime" ? "Any time" : formatTime(slot);
+    }
+
+    function slotForTask(task) {
+      if (!task.time) return "anytime";
+      return `${task.time.slice(0, 2)}:00`;
+    }
+
+    function avatarMarkup(pet, size = 64) {
+      const initials = (pet.name || "PT").slice(0, 2).toUpperCase();
+      const image = pet.photo ? `<img src="${escape(pet.photo)}" alt="${escape(pet.name)}">` : initials;
+      return `<span class="pet-avatar" style="width:${size}px;height:${size}px">${image}</span>`;
+    }
+
+    function escape(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function setMessage(text) {
+      el.statusMessage.textContent = text;
+    }
+
+    function activeProfileTabLock() {
+      if (activeProfileTab !== "info") return false;
+      return Boolean(currentPet()?.tabLocks?.[activeProfileTab]);
+    }
+
+    function setProfileInteractivity() {
+      const locked = activeProfileTabLock();
+      byId("saveProfileButton").textContent = locked ? "Edit" : "Save";
+      const paneMap = {
+        info: el.profileInfoTab,
+        food: el.profileFoodTab,
+        medication: el.profileMedicationTab
+      };
+      Object.entries(paneMap).forEach(([tab, pane]) => {
+        if (!pane) return;
+        const tabLocked = tab === "info" ? Boolean(currentPet()?.tabLocks?.[tab]) : false;
+        pane.classList.toggle("disabled-pane", tab === activeProfileTab && tabLocked);
+        pane.querySelectorAll("input, select, textarea, button").forEach((node) => {
+          if (node.matches("[data-profile-tab]") || node.matches("[data-med-tab]")) return;
+          node.disabled = tab === activeProfileTab ? tabLocked : false;
+        });
+      });
+      document.querySelectorAll("[data-profile-tab], [data-med-tab]").forEach((node) => {
+        node.disabled = false;
+      });
+      byId("saveProfileButton").disabled = false;
+    }
+
+    function renderTaskComposer() {
+      el.inlineTaskComposer.hidden = !addTaskOpen;
+      byId("openAddTaskButton").setAttribute("aria-label", addTaskOpen ? "Collapse add task form" : "Expand add task form");
+      el.taskComposerToggleIcon.textContent = addTaskOpen ? "\u2304" : "+";
+    }
+
+    function syncTaskOrder(list) {
+      list.tasks
+        .sort((a, b) => {
+          const slotDiff = TIME_SLOTS.indexOf(slotForTask(a)) - TIME_SLOTS.indexOf(slotForTask(b));
+          if (slotDiff) return slotDiff;
+          if (slotForTask(a) === slotForTask(b)) return a.order - b.order;
+          return 0;
+        })
+        .forEach((task, index) => {
+          task.order = index + 1;
+        });
+    }
+
+    function moveTaskToSlot(list, taskId, slot, beforeTaskId = null) {
+      const task = list.tasks.find((item) => item.id === taskId);
+      if (!task) return;
+      const nextTime = slot === "anytime" ? "" : `${slot.slice(0, 2)}:${task.time ? task.time.slice(3, 5) : "00"}`;
+      task.time = nextTime;
+      const slotTasks = list.tasks
+        .filter((item) => item.id !== taskId && slotForTask(item) === slot)
+        .sort((a, b) => a.order - b.order);
+      const insertAt = beforeTaskId ? slotTasks.findIndex((item) => item.id === beforeTaskId) : -1;
+      const orderedSlotTasks = [...slotTasks];
+      if (insertAt >= 0) orderedSlotTasks.splice(insertAt, 0, task);
+      else orderedSlotTasks.push(task);
+      const otherTasks = list.tasks
+        .filter((item) => slotForTask(item) !== slot && item.id !== taskId)
+        .sort((a, b) => a.order - b.order);
+      list.tasks = [...otherTasks, ...orderedSlotTasks];
+      syncTaskOrder(list);
+    }
+
+    function speciesConfig(species) {
+      return SPECIES[species === "dog" ? "dog" : "cat"];
+    }
+
+    function populateSelect(select, values, selected, placeholder) {
+      select.innerHTML = [`<option value="">${placeholder}</option>`, ...values.map((item) => `<option value="${escape(item)}">${escape(item)}</option>`)].join("");
+      select.value = selected || "";
+    }
+
+    function populateDatalist(node, values) {
+      node.innerHTML = values.map((item) => `<option value="${escape(item)}"></option>`).join("");
+    }
+
+    function openModal(id) {
+      byId(id).hidden = false;
+    }
+
+    function closeModal(id) {
+      byId(id).hidden = true;
+    }
+
+    function closeMenus() {
+      document.querySelectorAll(".action-menu").forEach((menu) => { menu.hidden = true; });
+    }
+
+    function toggleMenu(id) {
+      const menu = byId(id);
+      if (!menu) return;
+      const open = menu.hidden;
+      closeMenus();
+      menu.hidden = !open;
+    }
+
+    function medicationTaskLabel(item) {
+      const parts = [];
+      if (item.name) parts.push(item.name);
+      if (item.dosage) parts.push(`- ${item.dosage}`);
+      if (item.instructions) parts.push(`(${item.instructions})`);
+      if (item.purpose) parts.push(`for ${item.purpose}`);
+      return parts.join(" ").trim();
+    }
+
+    function foodTaskLabel(item) {
+      const parts = [];
+      if (item.name) parts.push(`Serve ${item.name}`);
+      if (item.amount) parts.push(`- ${item.amount}`);
+      if (item.instructions) parts.push(`(${item.instructions})`);
+      return parts.join(" ").trim();
+    }
+
+    function assignedListLabel(listId) {
+      if (!listId) return "Not assigned";
+      const list = state.lists.find((entry) => entry.id === listId);
+      return list ? `${list.title} · ${formatDateRange(list.date, list.dateEnd)}` : "Not assigned";
+    }
+
+    function render() {
+      renderNav();
+      renderLists();
+      renderPetSwitcher();
+      renderPlanner();
+      renderProfile();
+      renderHistory();
+      renderViews();
+      renderTaskComposer();
+    }
+
+    function renderNav() {
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === state.activeView);
+      });
+    }
+
+    function renderLists() {
+      const lists = visibleLists();
+      const selectedList = currentList();
+      el.newListPet.innerHTML = state.pets.map((pet) => `<option value="${pet.id}">${escape(pet.name)}</option>`).join("");
+      el.newListPet.value = currentPet().id;
+      if (!lists.length) {
+        el.listStack.innerHTML = '<div class="empty">No care lists yet for this pet. Create one for the next feeding or routine check.</div>';
+        return;
+      }
+      el.listStack.innerHTML = lists.map((list) => {
+        const pet = petById(list.petId);
+        return `
+          <button class="list-card ${list.id === selectedList?.id ? "active" : ""}" data-list-id="${list.id}" type="button">
+            <span>
+              <strong>${escape(list.title)}</strong>
+              <span class="pet-small">${escape(formatDateRange(list.date, list.dateEnd))} · ${escape(pet?.name || "Pet")}</span>
+            </span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderPetSwitcher() {
+      el.petSwitcher.classList.toggle("scrollable", state.pets.length > 2);
+      el.petSwitcher.innerHTML = state.pets.map((pet) => `
+        <button class="pet-switcher-button ${pet.id === state.activePetId ? "active" : ""}" data-pet-id="${pet.id}" type="button">
+          <span style="display:flex;align-items:center;gap:12px;">
+            ${avatarMarkup(pet, 52)}
+            <span>
+              <strong>${escape(pet.name)}</strong>
+              <span class="pet-small">${escape(pet.breed || "No breed added yet")}</span>
+            </span>
+          </span>
+        </button>
+      `).join("");
+    }
+
+    function populateEditListModal(selectedId = "") {
+      const lists = visibleLists();
+      const selectedList = lists.find((list) => list.id === selectedId) || lists[0] || null;
+      el.editListSelect.innerHTML = lists.map((list) => `<option value="${list.id}">${escape(list.title)} · ${escape(formatDateRange(list.date, list.dateEnd))}</option>`).join("");
+      el.editListPet.innerHTML = state.pets.map((pet) => `<option value="${pet.id}">${escape(pet.name)}</option>`).join("");
+      if (!selectedList) {
+        el.editListTitle.value = "";
+        el.editListPet.value = currentPet().id;
+        el.editListStartDate.value = "";
+        el.editListEndDate.value = "";
+        return;
+      }
+      el.editListSelect.value = selectedList.id;
+      el.editListTitle.value = selectedList.title;
+      el.editListPet.value = selectedList.petId;
+      el.editListStartDate.value = selectedList.date || "";
+      el.editListEndDate.value = selectedList.dateEnd || "";
+    }
+
+    function renderPlanner() {
+      const list = currentList();
+      if (!list) {
+        el.activeListTitle.textContent = "No list selected";
+        el.activeListMeta.textContent = "Create a pet care list to begin.";
+        el.activeListPetChip.innerHTML = "";
+        byId("toggleReorderButton").classList.toggle("active", false);
+        el.taskTimeline.innerHTML = '<div class="empty">Scheduled tasks will appear here once you create a list and add care steps.</div>';
+        return;
+      }
+      const pet = petById(list.petId);
+      const healthSummary = pet?.healthConditions?.length ? pet.healthConditions.map((item) => item.name).filter(Boolean).join(", ") : "";
+      el.activeListTitle.textContent = list.title;
+      el.activeListMeta.textContent = `${formatDateRange(list.date, list.dateEnd)} · ${pet?.name || "Pet"}`;
+      el.activeListPetChip.innerHTML = pet ? `
+        <div class="list-pet-chip">
+          ${avatarMarkup(pet, 40)}
+          <span>
+            <strong>${escape(pet.name)}</strong>
+            <span class="pet-small">${escape(pet.species === "cat" ? "Cat" : "Dog")}${pet.breed ? ` · ${escape(pet.breed)}` : ""}${healthSummary ? ` · ${escape(healthSummary)}` : ""}</span>
+          </span>
+        </div>
+      ` : "";
+      byId("toggleReorderButton").classList.toggle("active", reorderMode);
+      if (!list.tasks.length) {
+        el.taskTimeline.innerHTML = '<div class="empty">This care list is empty. Add tasks like feed, walk, clean, or give medication.</div>';
+        return;
+      }
+      const grouped = Object.fromEntries(TIME_SLOTS.map((slot) => [slot, []]));
+      [...list.tasks].sort((a, b) => a.order - b.order).forEach((task) => grouped[slotForTask(task)].push(task));
+      el.taskTimeline.innerHTML = TIME_SLOTS.map((slot) => `
+        <section class="time-slot" data-slot="${slot}">
+          <div class="time-label">${escape(slotLabel(slot))}</div>
+          <div class="slot-body" data-slot-body="${slot}">
+            ${grouped[slot].length ? grouped[slot].map((task) => `
+              <article class="task-card status-${escape(task.status)} ${reorderMode ? "reorder-enabled" : ""}" data-task-id="${task.id}" draggable="${reorderMode ? "true" : "false"}">
+                <div class="task-row">
+                  <div>
+                    ${task.time ? `<div class="pet-small">${escape(formatTime(task.time))}</div>` : ""}
+                    <div class="task-text">${escape(task.text)}</div>
+                  </div>
+                  <div class="task-actions">
+                    <select class="status-select" data-task-status="${task.id}">
+                      <option value="pending" ${task.status === "pending" ? "selected" : ""}>Open</option>
+                      <option value="completed" ${task.status === "completed" ? "selected" : ""}>Completed</option>
+                      <option value="missed" ${task.status === "missed" ? "selected" : ""}>Missing</option>
+                      <option value="delayed" ${task.status === "delayed" ? "selected" : ""}>Delayed</option>
+                    </select>
+                    <button class="icon-button" data-task-delete="${task.id}" type="button" aria-label="Delete task">&#128465;</button>
+                  </div>
+                </div>
+              </article>
+            `).join("") : ""}
+          </div>
+        </section>
+      `).join("");
+    }
+
+    function renderProfile() {
+      const pet = currentPet();
+      const config = speciesConfig(pet.species);
+      populateSelect(el.petAge, config.ages, pet.age, "Select age range");
+      populateSelect(el.petWeight, config.weights, pet.weight, "Select weight range");
+      populateDatalist(el.breedSuggestions, [...config.breeds, "Other", "Unknown"]);
+      populateDatalist(el.foodSuggestions, config.foods);
+      populateDatalist(el.amountSuggestions, config.foodAmounts);
+      populateDatalist(el.healthSuggestions, config.health);
+
+      el.profileHero.innerHTML = `
+        <button class="avatar-editor" id="openPetPhotoModalButton" type="button" aria-label="Edit pet photo">
+          ${avatarMarkup(pet, 64)}
+          <span class="avatar-edit-badge">&#9998;</span>
+        </button>
+        <div>
+          <strong>${escape(pet.name)}</strong>
+          <p class="copy">${escape(pet.species === "cat" ? "Cat" : "Dog")}${pet.breed ? ` · ${escape(pet.breed)}` : ""}</p>
+        </div>
+      `;
+      byId("openPetPhotoModalButton").addEventListener("click", () => openModal("petPhotoModal"));
+
+      el.petSpecies.value = pet.species;
+      el.petName.value = pet.name;
+      el.petHeight.value = pet.height;
+      el.petBreed.value = pet.breed;
+      el.petSterilization.value = pet.sterilization;
+      el.petFurColor.value = pet.furColor;
+      el.petEyeColor.value = pet.eyeColor;
+      el.petAllergens.value = pet.allergens;
+      el.petTemperament.value = pet.temperament;
+      renderHealth();
+      renderFoods();
+      renderMedications();
+      renderMedicationHistory();
+      renderProfileTabs();
+      renderMedicationComposer();
+      el.editProfileChooser.hidden = true;
+      setProfileInteractivity();
+    }
+
+    function renderHealth() {
+      const pet = currentPet();
+      el.healthComposer.hidden = !healthEditor.open;
+      el.healthComposerToggleIcon.textContent = healthEditor.open ? "\u2304" : "+";
+      el.deleteHealthButton.hidden = healthEditor.index === null;
+      if (!pet.healthConditions.length) {
+        el.healthList.innerHTML = '<div class="empty">Nothing added yet.</div>';
+        return;
+      }
+      el.healthList.innerHTML = pet.healthConditions.map((item, index) => `
+        <div class="health-row">
+          <div class="health-copy">
+            <strong>${escape(item.name)}</strong>
+            <span>${escape(item.diagnosisDate ? `Diagnosed on: ${formatDate(item.diagnosisDate)}` : "Diagnosed on: Not added")}</span>
+            ${item.notes ? `<span>${escape(item.notes)}</span>` : ""}
+          </div>
+          <div class="task-actions">
+            <button class="secondary icon-button" data-health-edit="${index}" type="button" aria-label="Edit condition">&#9998;</button>
+            <button class="icon-button" data-health-delete="${index}" type="button" aria-label="Delete condition">&#128465;</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderFoods() {
+      const pet = currentPet();
+      if (!pet.foods.length) {
+        el.foodList.innerHTML = '<div class="empty">Nothing added yet.</div>';
+        return;
+      }
+      const listOptions = [`<option value="">Select care list</option>`, ...state.lists
+        .filter((list) => list.petId === pet.id)
+        .map((list) => `<option value="${list.id}">${escape(list.title)} · ${escape(formatDateRange(list.date, list.dateEnd))}</option>`)]
+        .join("");
+      el.foodList.innerHTML = pet.foods.map((item, index) => `
+        <div class="food-row">
+          <div class="food-main-row">
+            <div class="field">
+              <input type="text" data-food-field="name" data-food-index="${index}" list="foodSuggestions" value="${escape(item.name)}" placeholder="Food name">
+            </div>
+            <div class="field">
+              <input type="text" data-food-field="amount" data-food-index="${index}" list="amountSuggestions" value="${escape(item.amount)}" placeholder="Amount">
+            </div>
+            <div class="field">
+              <select data-food-list="${index}">
+                ${listOptions}
+              </select>
+            </div>
+            <div class="menu-wrap">
+              <button class="icon-button menu-button" data-food-menu="${index}" type="button" aria-label="Food actions">&#8942;</button>
+              <div class="action-menu" id="food-menu-${index}" hidden>
+                <button data-food-edit="${index}" type="button">Edit</button>
+                <button data-food-delete="${index}" type="button">Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Instructions</label>
+            <input type="text" data-food-field="instructions" data-food-index="${index}" value="${escape(item.instructions)}" placeholder="Instructions">
+          </div>
+          <div class="food-save-row">
+            <button class="primary" data-food-save="${index}" type="button">Save</button>
+          </div>
+        </div>
+      `).join("");
+      pet.foods.forEach((item, index) => {
+        const select = el.foodList.querySelector(`[data-food-list="${index}"]`);
+        if (select) select.value = item.assignedListId || "";
+      });
+    }
+
+    function medSuggestions(field, value) {
+      const pet = currentPet();
+      const config = speciesConfig(pet.species);
+      const map = {
+        name: config.meds,
+        dosage: config.doses,
+        instructions: config.instructions,
+        purpose: SPECIES.purposeCategories
+      };
+      const options = map[field] || [];
+      const query = String(value || "").trim().toLowerCase();
+      const matches = options.filter((item) => !query || item.toLowerCase().includes(query)).slice(0, 5);
+      if (!matches.length) return "";
+      return `<div class="suggestions">${matches.map((item) => `<button class="suggestion-chip" data-med-suggestion="${escape(item)}" data-med-suggestion-field="${field}" type="button">${escape(item)}</button>`).join("")}</div>`;
+    }
+
+    function updateMedicationSuggestionHost(index, field, value) {
+      const host = el.medicationRows.querySelector(`[data-med-suggestion-host="${field}"][data-med-index="${index}"]`);
+      if (!host) return;
+      host.innerHTML = medSuggestions(field, value);
+    }
+
+    function clearMedicationSuggestionHosts() {
+      el.medicationRows.querySelectorAll(".suggestions-host").forEach((host) => {
+        host.innerHTML = "";
+      });
+    }
+
+    function updateNewMedicationSuggestionHost(field, value) {
+      const map = {
+        name: byId("newMedicationNameSuggestions"),
+        dosage: byId("newMedicationDosageSuggestions"),
+        instructions: byId("newMedicationInstructionsSuggestions"),
+        purpose: byId("newMedicationPurposeSuggestions")
+      };
+      const host = map[field];
+      if (!host) return;
+      host.innerHTML = medSuggestions(field, value);
+    }
+
+    function renderMedicationComposer() {
+      el.newMedicationComposer.hidden = !medComposerOpen;
+      el.medComposerToggleIcon.textContent = medComposerOpen ? "\u2304" : "+";
+      const pet = currentPet();
+      const options = [`<option value="">Select list</option>`, ...state.lists
+        .filter((list) => list.petId === pet.id)
+        .map((list) => `<option value="${list.id}">${escape(list.title)} · ${escape(formatDateRange(list.date, list.dateEnd))}</option>`)]
+        .join("");
+      if (el.newMedicationAssignedList) el.newMedicationAssignedList.innerHTML = options;
+    }
+
+    function renderMedications() {
+      const pet = currentPet();
+      if (!pet.medications.length) {
+        pet.medications.push({ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" });
+      }
+      const listOptions = state.lists
+        .filter((list) => list.petId === pet.id)
+        .map((list) => `<option value="${list.id}">${escape(list.title)} · ${escape(formatDateRange(list.date, list.dateEnd))}</option>`)
+        .join("");
+      el.medicationRows.innerHTML = pet.medications.map((item, index) => `
+        <div class="med-row">
+          <div class="med-main-row">
+            <div class="field">
+              <label>Medication Name</label>
+              <textarea data-med-field="name" data-med-index="${index}" placeholder="Medication name">${escape(item.name)}</textarea>
+              <div class="suggestions-host" data-med-suggestion-host="name" data-med-index="${index}"></div>
+            </div>
+            <div class="field">
+              <label>Dosage</label>
+              <textarea data-med-field="dosage" data-med-index="${index}" placeholder="Custom dosage">${escape(item.dosage)}</textarea>
+              <div class="suggestions-host" data-med-suggestion-host="dosage" data-med-index="${index}"></div>
+            </div>
+            <div class="field duration-range">
+              <label>Duration</label>
+              <div class="duration-range-shell">
+                <div class="duration-range-row">
+                  <input data-med-duration="start" data-med-index="${index}" type="date" value="${escape(item.durationStart || "")}">
+                  <input data-med-duration="end" data-med-index="${index}" type="date" value="${escape(item.durationEnd || "")}">
+                </div>
+              </div>
+            </div>
+            <div class="menu-wrap">
+              <button class="icon-button menu-button" data-med-menu="${index}" type="button" aria-label="Medication actions">&#8942;</button>
+              <div class="action-menu" id="med-menu-${index}" hidden>
+                <button data-med-edit="${index}" type="button">Edit</button>
+                <button data-med-retire="${index}" type="button">Retire medication</button>
+                <button data-med-delete="${index}" type="button">Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Instructions</label>
+            <textarea data-med-field="instructions" data-med-index="${index}" placeholder="Administration instructions">${escape(item.instructions)}</textarea>
+            <div class="suggestions-host" data-med-suggestion-host="instructions" data-med-index="${index}"></div>
+          </div>
+          <div class="field">
+            <label>Purpose</label>
+            <textarea data-med-field="purpose" data-med-index="${index}" placeholder="Purpose">${escape(item.purpose)}</textarea>
+            <div class="suggestions-host" data-med-suggestion-host="purpose" data-med-index="${index}"></div>
+          </div>
+          ${medicationEditIndex === index ? `` : `
+            <div class="assigned-summary">Assigned to List: ${escape(assignedListLabel(item.assignedListId))}${item.assignedTime ? ` · ${escape(item.assignedTime)}` : ""}</div>
+          `}
+          ${medicationEditIndex === index ? `
+            <div class="med-assign-row">
+              <div class="field">
+                <label>Assign to List</label>
+                <select data-med-list="${index}">
+                  <option value="">Select care list</option>
+                  ${listOptions}
+                </select>
+              </div>
+              <div class="field">
+                <label>Specified time</label>
+                <input data-med-time="${index}" type="time" value="${escape(item.assignedTime || "")}">
+              </div>
+              <div class="med-actions-stack">
+                <button class="primary" data-med-save="${index}" type="button">Save</button>
+              </div>
+            </div>
+          ` : ``}
+        </div>
+      `).join("");
+      pet.medications.forEach((item, index) => {
+        const select = el.medicationRows.querySelector(`[data-med-list="${index}"]`);
+        if (select) select.value = item.assignedListId || "";
+        const time = el.medicationRows.querySelector(`[data-med-time="${index}"]`);
+        if (time) time.value = item.assignedTime || "";
+      });
+    }
+
+    function renderMedicationHistory() {
+      const items = currentPet().medicationHistory;
+      if (!items.length) {
+        el.historyMedicationList.innerHTML = '<div class="empty">No retired medications yet.</div>';
+        el.selectAllHistoryMedication.checked = false;
+        return;
+      }
+      el.selectAllHistoryMedication.checked = items.length > 0 && items.every((item) => item.selected);
+      el.historyMedicationList.innerHTML = items.map((item) => `
+        <article class="history-card history-select-row">
+          <input type="checkbox" data-history-select="${escape(item.retiredAt)}|${escape(item.name || "")}" ${item.selected ? "checked" : ""}>
+          <div style="display:grid;gap:8px;">
+            <strong>${escape(item.name || "Untitled medication")}</strong>
+            <span class="pet-small">${escape(formatDate(item.retiredAt))}</span>
+            <span class="pet-small">Dosage: ${escape(item.dosage || "Not recorded")}</span>
+            <span class="pet-small">Duration: ${escape(item.durationStart || item.durationEnd ? `${item.durationStart || "Start not recorded"} to ${item.durationEnd || "End not recorded"}` : "Not recorded")}</span>
+            <span class="pet-small">Instructions: ${escape(item.instructions || "Not recorded")}</span>
+            <span class="pet-small">Purpose: ${escape(item.purpose || "Not recorded")}</span>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderHistory() {
+      const oldLists = state.lists.filter((list) => list.date < today()).sort((a, b) => b.date.localeCompare(a.date));
+      el.historyList.innerHTML = oldLists.length ? oldLists.map((list) => `
+        <article class="history-card">
+          <strong>${escape(list.title)}</strong>
+            <span class="pet-small">${escape(formatDateRange(list.date, list.dateEnd))} · ${escape(petById(list.petId)?.name || "Pet")}</span>
+        </article>
+      `).join("") : '<div class="empty">Past lists will appear here once their date is earlier than today.</div>';
+    }
+
+    function renderViews() {
+      el.plannerView.hidden = state.activeView !== "planner";
+      el.profilesView.hidden = state.activeView !== "profiles";
+      el.historyView.hidden = state.activeView !== "history";
+    }
+
+    function renderProfileTabs() {
+      el.profileInfoTab.hidden = activeProfileTab !== "info";
+      el.profileFoodTab.hidden = activeProfileTab !== "food";
+      el.profileMedicationTab.hidden = activeProfileTab !== "medication";
+      el.currentMedicationPanel.hidden = activeMedicationTab !== "current";
+      el.historyMedicationPanel.hidden = activeMedicationTab !== "history";
+      byId("saveProfileButton").hidden = activeProfileTab === "medication" || activeProfileTab === "food";
+      document.querySelectorAll("[data-profile-tab]").forEach((button) => button.classList.toggle("active", button.dataset.profileTab === activeProfileTab));
+      document.querySelectorAll("[data-med-tab]").forEach((button) => button.classList.toggle("active", button.dataset.medTab === activeMedicationTab));
+    }
+
+    function openHealthComposer(index = null) {
+      const pet = currentPet();
+      healthEditor = { open: true, index };
+      if (index !== null && pet.healthConditions[index]) {
+        el.petHealth.value = pet.healthConditions[index].name;
+        el.petHealthDate.value = pet.healthConditions[index].diagnosisDate || "";
+        el.petHealthNotes.value = pet.healthConditions[index].notes || "";
+      } else {
+        el.petHealth.value = "";
+        el.petHealthDate.value = "";
+        el.petHealthNotes.value = "";
+      }
+      renderHealth();
+      el.petHealth.focus();
+    }
+
+    function closeHealthComposer() {
+      healthEditor = { open: false, index: null };
+      el.petHealth.value = "";
+      el.petHealthDate.value = "";
+      el.petHealthNotes.value = "";
+      renderHealth();
+    }
+
+    function openAssignModal(title, preview, petId, payload) {
+      const lists = state.lists.filter((list) => list.petId === petId);
+      if (!lists.length) {
+        setMessage("Create a care list for this pet before assigning profile items.");
+        return;
+      }
+      pendingAssignment = payload;
+      el.assignTitle.textContent = title;
+      el.assignListSelect.innerHTML = lists.map((list) => `<option value="${list.id}">${escape(list.title)} · ${escape(formatDateRange(list.date, list.dateEnd))}</option>`).join("");
+      el.assignTaskPreview.value = preview;
+      el.assignTaskTime.value = "";
+      openModal("assignModal");
+    }
+
+    function closeAssignModal() {
+      pendingAssignment = null;
+      el.assignTaskPreview.value = "";
+      el.assignTaskTime.value = "";
+      closeModal("assignModal");
+    }
+
+    document.addEventListener("click", (event) => {
+      const profileTab = event.target.closest("[data-profile-tab]");
+      if (profileTab) {
+        activeProfileTab = profileTab.dataset.profileTab;
+        if (activeProfileTab === "medication") activeMedicationTab = "current";
+        renderProfileTabs();
+        return;
+      }
+      const medTab = event.target.closest("[data-med-tab]");
+      if (medTab) {
+        activeMedicationTab = medTab.dataset.medTab;
+        renderProfileTabs();
+        return;
+      }
+      if (healthEditor.open && !event.target.closest("#healthPanel")) {
+        closeHealthComposer();
+      }
+      if (medSuggestion && !event.target.closest("#medicationRows")) {
+        medSuggestion = null;
+        clearMedicationSuggestionHosts();
+      }
+      if (!event.target.closest(".action-menu") && !event.target.closest("[data-med-menu]") && !event.target.closest("[data-food-menu]") && !event.target.closest("[data-health-menu]")) {
+        closeMenus();
+      }
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.activeView = button.dataset.view;
+        saveState();
+        renderViews();
+        renderNav();
+      });
+    });
+
+    byId("openCreateListButton").addEventListener("click", () => {
+      el.newListDate.value = today();
+      el.newListEndDate.value = "";
+      el.newListTitle.value = "";
+      openModal("createListModal");
+    });
+
+    byId("openEditListButton").addEventListener("click", () => {
+      const lists = visibleLists();
+      if (!lists.length) {
+        setMessage("Create a care list for this pet before editing one.");
+        return;
+      }
+      populateEditListModal(state.activeListId);
+      openModal("editListModal");
+    });
+
+    byId("createListButton").addEventListener("click", () => {
+      const title = el.newListTitle.value.trim();
+      if (!title) return;
+      const startDate = el.newListDate.value || today();
+      const endDate = el.newListEndDate.value || "";
+      const list = {
+        id: uid(),
+        title,
+        date: startDate,
+        dateEnd: endDate && endDate >= startDate ? endDate : "",
+        petId: el.newListPet.value,
+        tasks: []
+      };
+      state.lists.unshift(list);
+      state.activeListId = list.id;
+      state.activeView = "planner";
+      saveState();
+      closeModal("createListModal");
+      render();
+      setMessage("New care list created.");
+    });
+
+    el.editListSelect.addEventListener("change", () => {
+      populateEditListModal(el.editListSelect.value);
+    });
+
+    byId("saveEditListButton").addEventListener("click", () => {
+      const list = state.lists.find((entry) => entry.id === el.editListSelect.value);
+      if (!list) return;
+      const title = el.editListTitle.value.trim();
+      if (!title) return;
+      const startDate = el.editListStartDate.value || today();
+      const endDate = el.editListEndDate.value || "";
+      list.title = title;
+      list.petId = el.editListPet.value;
+      list.date = startDate;
+      list.dateEnd = endDate && endDate >= startDate ? endDate : "";
+      state.activePetId = list.petId;
+      state.activeListId = list.id;
+      state.activeView = "planner";
+      saveState();
+      closeModal("editListModal");
+      render();
+      setMessage("Care list updated.");
+    });
+
+    byId("toggleReorderButton").addEventListener("click", () => {
+      reorderMode = !reorderMode;
+      renderPlanner();
+      setMessage(reorderMode ? "Reorder is on. Drag a task into a new time slot or position." : "");
+    });
+
+    byId("openAddTaskButton").addEventListener("click", () => {
+      addTaskOpen = !addTaskOpen;
+      if (addTaskOpen) {
+        el.taskInput.value = "";
+        el.taskTimeInput.value = "";
+        el.taskRepeatInput.value = "";
+      }
+      renderTaskComposer();
+    });
+
+    el.listStack.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-list-id]");
+      if (!card) return;
+      state.activeListId = card.dataset.listId;
+      state.activeView = "planner";
+      saveState();
+      render();
+    });
+
+    el.petSwitcher.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-pet-id]");
+      if (!button) return;
+      state.activePetId = button.dataset.petId;
+      const matchingList = state.lists.find((list) => list.petId === state.activePetId);
+      state.activeListId = matchingList?.id || null;
+      state.activeView = "profiles";
+      saveState();
+      render();
+    });
+
+    el.taskTimeline.addEventListener("click", (event) => {
+      const slot = event.target.closest(".time-slot");
+      if (!slot) return;
+      if (event.target.closest("button, select, textarea, input, .task-card")) return;
+      if (!currentList()) return;
+    });
+
+    byId("saveTaskButton").addEventListener("click", () => {
+      const list = currentList();
+      if (!list) return;
+      const lines = el.taskInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (!lines.length) return;
+      list.tasks.push(...lines.map((text, index) => ({
+        id: uid(),
+        text,
+        status: "pending",
+        time: el.taskTimeInput.value || "",
+        repeat: el.taskRepeatInput.value || "",
+        order: list.tasks.length + index + 1
+      })));
+      saveState();
+      addTaskOpen = false;
+      renderTaskComposer();
+      renderPlanner();
+      setMessage(`${lines.length} task${lines.length === 1 ? "" : "s"} added.`);
+    });
+
+    el.taskTimeline.addEventListener("change", (event) => {
+      const select = event.target.closest("[data-task-status]");
+      if (!select) return;
+      const list = currentList();
+      const task = list?.tasks.find((item) => item.id === select.dataset.taskStatus);
+      if (!task) return;
+      task.status = select.value;
+      saveState();
+      renderPlanner();
+    });
+
+    el.taskTimeline.addEventListener("click", (event) => {
+      const del = event.target.closest("[data-task-delete]");
+      if (!del) return;
+      const list = currentList();
+      if (!list) return;
+      list.tasks = list.tasks.filter((task) => task.id !== del.dataset.taskDelete);
+      saveState();
+      renderPlanner();
+      setMessage("Task deleted.");
+    });
+
+    el.taskTimeline.addEventListener("dragstart", (event) => {
+      const card = event.target.closest("[data-task-id]");
+      if (!reorderMode || !card) return;
+      dragTaskId = card.dataset.taskId;
+      card.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", dragTaskId);
+    });
+
+    el.taskTimeline.addEventListener("dragend", (event) => {
+      event.target.closest("[data-task-id]")?.classList.remove("dragging");
+      dragTaskId = null;
+    });
+
+    el.taskTimeline.addEventListener("dragover", (event) => {
+      if (!reorderMode) return;
+      const slotBody = event.target.closest("[data-slot-body]");
+      const taskCard = event.target.closest("[data-task-id]");
+      if (!slotBody && !taskCard) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    });
+
+    el.taskTimeline.addEventListener("drop", (event) => {
+      if (!reorderMode) return;
+      const list = currentList();
+      if (!list || !dragTaskId) return;
+      const slotBody = event.target.closest("[data-slot-body]");
+      const taskCard = event.target.closest("[data-task-id]");
+      const slot = slotBody?.dataset.slotBody || taskCard?.closest(".time-slot")?.dataset.slot;
+      if (!slot) return;
+      event.preventDefault();
+      moveTaskToSlot(list, dragTaskId, slot, taskCard?.dataset.taskId && taskCard.dataset.taskId !== dragTaskId ? taskCard.dataset.taskId : null);
+      saveState();
+      renderPlanner();
+    });
+
+    byId("managePetButton").addEventListener("click", () => {
+      el.editProfileChooser.hidden = true;
+      openModal("managePetModal");
+    });
+
+    byId("createPetProfileButton").addEventListener("click", () => {
+      const pet = {
+        id: uid(),
+        name: `Pet ${state.pets.length + 1}`,
+          species: "dog",
+          photo: "",
+        age: "",
+        weight: "",
+        height: "",
+        breed: "",
+        furColor: "",
+        eyeColor: "",
+        sterilization: "not sterilized",
+        tabLocks: { info: false, food: false, medication: false },
+        temperament: "",
+        allergens: "",
+        foods: [],
+        healthConditions: [],
+        medications: [{ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" }],
+        medicationHistory: []
+      };
+      state.pets.push(pet);
+      state.activePetId = pet.id;
+      state.activeView = "profiles";
+      saveState();
+      closeModal("managePetModal");
+      render();
+      setMessage("New pet profile created.");
+    });
+
+    byId("saveProfileButton").addEventListener("click", () => {
+      const pet = currentPet();
+      pet.tabLocks ||= { info: false, food: false, medication: false };
+      if (pet.tabLocks[activeProfileTab]) {
+        pet.tabLocks[activeProfileTab] = false;
+        saveState();
+        renderProfile();
+        setMessage("This section is unlocked for editing.");
+        return;
+      }
+      if (activeProfileTab === "info") {
+        pet.name = el.petName.value.trim() || pet.name || "Pet";
+        pet.age = el.petAge.value;
+        pet.weight = el.petWeight.value;
+        pet.height = el.petHeight.value.trim();
+        pet.species = el.petSpecies.value === "dog" ? "dog" : "cat";
+        pet.breed = el.petBreed.value.trim();
+        pet.sterilization = el.petSterilization.value;
+        pet.allergens = el.petAllergens.value.trim();
+        pet.furColor = el.petFurColor.value.trim();
+        pet.eyeColor = el.petEyeColor.value.trim();
+        pet.temperament = el.petTemperament.value.trim();
+      }
+      pet.tabLocks[activeProfileTab] = true;
+      saveState();
+      render();
+      setMessage(`${activeProfileTab === "info" ? "Info" : activeProfileTab === "food" ? "Food details" : "Medication details"} saved.`);
+    });
+
+    el.petSpecies.addEventListener("change", () => {
+      if (activeProfileTabLock()) return;
+      const config = speciesConfig(el.petSpecies.value);
+      populateSelect(el.petAge, config.ages, "", "Select age range");
+      populateSelect(el.petWeight, config.weights, "", "Select weight range");
+      populateDatalist(el.breedSuggestions, [...config.breeds, "Other", "Unknown"]);
+      populateDatalist(el.foodSuggestions, config.foods);
+      populateDatalist(el.amountSuggestions, config.foodAmounts);
+      populateDatalist(el.healthSuggestions, config.health);
+    });
+
+    byId("editPetProfileButton").addEventListener("click", () => {
+      el.editProfileSelect.innerHTML = state.pets.map((pet) => `<option value="${pet.id}">${escape(pet.name)}</option>`).join("");
+      el.editProfileSelect.value = currentPet().id;
+      el.editProfileChooser.hidden = false;
+    });
+
+    byId("confirmEditProfileButton").addEventListener("click", () => {
+      state.activePetId = el.editProfileSelect.value || state.activePetId;
+      state.activeView = "profiles";
+      saveState();
+      closeModal("managePetModal");
+      render();
+    });
+
+    byId("deletePetProfileButton").addEventListener("click", () => {
+      if (state.pets.length === 1) {
+        setMessage("Keep at least one pet profile in the planner.");
+        return;
+      }
+      const id = currentPet().id;
+      state.pets = state.pets.filter((pet) => pet.id !== id);
+      state.lists = state.lists.filter((list) => list.petId !== id);
+      state.activePetId = state.pets[0].id;
+      if (state.activeListId && !state.lists.find((list) => list.id === state.activeListId)) {
+        state.activeListId = state.lists[0]?.id || null;
+      }
+      saveState();
+      closeModal("managePetModal");
+      render();
+      setMessage("Pet profile deleted.");
+    });
+
+    el.petPhotoUpload.addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        pendingPetPhoto = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") pendingPetPhoto = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    byId("savePetPhotoButton").addEventListener("click", () => {
+      if (pendingPetPhoto) {
+        currentPet().photo = pendingPetPhoto;
+        saveState();
+        render();
+        setMessage("Pet photo updated.");
+      }
+      pendingPetPhoto = "";
+      el.petPhotoUpload.value = "";
+      closeModal("petPhotoModal");
+    });
+
+    byId("toggleHealthComposerButton").addEventListener("click", () => {
+      if (healthEditor.open) closeHealthComposer();
+      else openHealthComposer();
+    });
+
+    byId("saveHealthButton").addEventListener("click", () => {
+      const pet = currentPet();
+      const name = el.petHealth.value.trim();
+      if (!name) return;
+      const item = { name, diagnosisDate: el.petHealthDate.value || "", notes: el.petHealthNotes.value.trim() };
+      if (healthEditor.index !== null && pet.healthConditions[healthEditor.index]) {
+        pet.healthConditions[healthEditor.index] = item;
+      } else {
+        pet.healthConditions.push(item);
+      }
+      saveState();
+      closeHealthComposer();
+      renderHealth();
+    });
+
+    byId("deleteHealthButton").addEventListener("click", () => {
+      const pet = currentPet();
+      if (healthEditor.index === null) return;
+      pet.healthConditions.splice(healthEditor.index, 1);
+      saveState();
+      closeHealthComposer();
+      renderHealth();
+      setMessage("Condition deleted.");
+    });
+
+    el.healthList.addEventListener("click", (event) => {
+      const edit = event.target.closest("[data-health-edit]");
+      if (edit) {
+        openHealthComposer(Number(edit.dataset.healthEdit));
+        return;
+      }
+      const del = event.target.closest("[data-health-delete]");
+      if (del) {
+        const pet = currentPet();
+        const index = Number(del.dataset.healthDelete);
+        if (Number.isNaN(index) || !pet.healthConditions[index]) return;
+        pet.healthConditions.splice(index, 1);
+        saveState();
+        renderHealth();
+        setMessage("Condition deleted.");
+      }
+    });
+
+    byId("addFoodButton").addEventListener("click", () => {
+      const value = el.newFoodName.value.trim();
+      if (!value) return;
+      const pet = currentPet();
+      if (!pet.foods.some((item) => item.name === value)) {
+        pet.foods.push({ name: value, amount: "", instructions: "", assignedListId: "" });
+      }
+      el.newFoodName.value = "";
+      saveState();
+      closeMenus();
+      renderFoods();
+    });
+
+    el.foodList.addEventListener("input", (event) => {
+      const field = event.target.dataset.foodField;
+      const index = Number(event.target.dataset.foodIndex);
+      const pet = currentPet();
+      if (!field || Number.isNaN(index) || !pet.foods[index]) return;
+      pet.foods[index][field] = event.target.value;
+    });
+
+    el.foodList.addEventListener("change", (event) => {
+      const listIndex = Number(event.target.dataset.foodList);
+      if (!Number.isNaN(listIndex) && currentPet().foods[listIndex]) {
+        currentPet().foods[listIndex].assignedListId = event.target.value;
+      }
+    });
+
+    el.foodList.addEventListener("click", (event) => {
+      const menu = event.target.closest("[data-food-menu]");
+      if (menu) {
+        toggleMenu(`food-menu-${menu.dataset.foodMenu}`);
+        return;
+      }
+      const edit = event.target.closest("[data-food-edit]");
+      if (edit) {
+        closeMenus();
+        el.foodList.querySelector(`[data-food-field="name"][data-food-index="${edit.dataset.foodEdit}"]`)?.focus();
+        return;
+      }
+      const save = event.target.closest("[data-food-save]");
+      if (save) {
+        const index = Number(save.dataset.foodSave);
+        const item = currentPet().foods[index];
+        if (!item) return;
+        if (item.assignedListId) {
+          const list = state.lists.find((entry) => entry.id === item.assignedListId);
+          if (list) {
+            list.tasks.push({
+              id: uid(),
+              text: foodTaskLabel(item),
+              status: "pending",
+              time: "",
+              repeat: "",
+              order: list.tasks.length + 1
+            });
+          }
+        }
+        saveState();
+        renderFoods();
+        setMessage("Food item saved.");
+        return;
+      }
+      const del = event.target.closest("[data-food-delete]");
+      if (del) {
+        closeMenus();
+        currentPet().foods.splice(Number(del.dataset.foodDelete), 1);
+        saveState();
+        renderFoods();
+      }
+    });
+
+    byId("addMedicationButton").addEventListener("click", () => {
+      medComposerOpen = !medComposerOpen;
+      renderMedicationComposer();
+    });
+
+    ["name", "dosage", "instructions", "purpose"].forEach((field) => {
+      const nodeMap = {
+        name: el.newMedicationName,
+        dosage: el.newMedicationDosage,
+        instructions: el.newMedicationInstructions,
+        purpose: el.newMedicationPurpose
+      };
+      const node = nodeMap[field];
+      node?.addEventListener("input", () => {
+        updateNewMedicationSuggestionHost(field, node.value);
+      });
+      node?.addEventListener("focus", () => {
+        updateNewMedicationSuggestionHost(field, node.value);
+      });
+    });
+
+    byId("newMedicationComposer").addEventListener("click", (event) => {
+      const suggestion = event.target.closest("[data-med-suggestion]");
+      if (!suggestion) return;
+      const field = suggestion.dataset.medSuggestionField;
+      const value = suggestion.dataset.medSuggestion || "";
+      const nodeMap = {
+        name: el.newMedicationName,
+        dosage: el.newMedicationDosage,
+        instructions: el.newMedicationInstructions,
+        purpose: el.newMedicationPurpose
+      };
+      const node = nodeMap[field];
+      if (!node) return;
+      node.value = value;
+      node.focus();
+      updateNewMedicationSuggestionHost(field, value);
+    });
+
+    byId("saveNewMedicationButton").addEventListener("click", () => {
+      const item = {
+        name: el.newMedicationName.value.trim(),
+        dosage: el.newMedicationDosage.value.trim(),
+        durationStart: el.newMedicationDurationStart.value || "",
+        durationEnd: el.newMedicationDurationEnd.value || "",
+        assignedListId: el.newMedicationAssignedList.value || "",
+        assignedTime: "",
+        instructions: el.newMedicationInstructions.value.trim(),
+        purpose: el.newMedicationPurpose.value.trim()
+      };
+      if (![item.name, item.dosage, item.durationStart, item.durationEnd, item.instructions, item.purpose].some(Boolean)) {
+        setMessage("Add medication details before saving a new item.");
+        return;
+      }
+      currentPet().medications.push(item);
+      if (item.assignedListId) {
+        const list = state.lists.find((entry) => entry.id === item.assignedListId);
+        if (list) {
+          const durationText = item.durationStart || item.durationEnd ? `Treatment: ${item.durationStart || "start"} to ${item.durationEnd || "end"}` : "";
+          list.tasks.push({
+            id: uid(),
+            text: [medicationTaskLabel(item), durationText].filter(Boolean).join(" - "),
+            status: "pending",
+            time: item.assignedTime || "",
+            repeat: "",
+            order: list.tasks.length + 1
+          });
+        }
+      }
+      saveState();
+      el.newMedicationName.value = "";
+      el.newMedicationDosage.value = "";
+      el.newMedicationDurationStart.value = "";
+      el.newMedicationDurationEnd.value = "";
+      el.newMedicationAssignedList.value = "";
+      el.newMedicationInstructions.value = "";
+      el.newMedicationPurpose.value = "";
+      medComposerOpen = false;
+      renderMedicationComposer();
+      renderMedications();
+    });
+
+    el.medicationRows.addEventListener("input", (event) => {
+      const field = event.target.dataset.medField;
+      const index = Number(event.target.dataset.medIndex);
+      const pet = currentPet();
+      if (!field || Number.isNaN(index) || !pet.medications[index]) return;
+      pet.medications[index][field] = event.target.value;
+      if (["name", "dosage", "instructions", "purpose"].includes(field)) {
+        medSuggestion = { field, index };
+        updateMedicationSuggestionHost(index, field, event.target.value);
+      }
+    });
+
+    el.medicationRows.addEventListener("focusin", (event) => {
+      const field = event.target.dataset.medField;
+      const index = Number(event.target.dataset.medIndex);
+      if (!field || Number.isNaN(index)) return;
+      if (["name", "dosage", "instructions", "purpose"].includes(field)) {
+        medSuggestion = { field, index };
+        updateMedicationSuggestionHost(index, field, event.target.value);
+      }
+    });
+
+    el.medicationRows.addEventListener("change", (event) => {
+      const field = event.target.dataset.medField;
+      const index = Number(event.target.dataset.medIndex);
+      const pet = currentPet();
+      if (!field || Number.isNaN(index) || !pet.medications[index]) return;
+      pet.medications[index][field] = event.target.value;
+      return;
+    });
+
+    el.medicationRows.addEventListener("change", (event) => {
+      const listIndex = Number(event.target.dataset.medList);
+      if (!Number.isNaN(listIndex) && currentPet().medications[listIndex]) {
+        currentPet().medications[listIndex].assignedListId = event.target.value;
+        return;
+      }
+      const timeIndex = Number(event.target.dataset.medTime);
+      if (!Number.isNaN(timeIndex) && currentPet().medications[timeIndex]) {
+        currentPet().medications[timeIndex].assignedTime = event.target.value;
+        return;
+      }
+      const durationPart = event.target.dataset.medDuration;
+      const index = Number(event.target.dataset.medIndex);
+      const pet = currentPet();
+      if (!durationPart || Number.isNaN(index) || !pet.medications[index]) return;
+      if (durationPart === "start") pet.medications[index].durationStart = event.target.value;
+      if (durationPart === "end") pet.medications[index].durationEnd = event.target.value;
+    });
+
+    el.medicationRows.addEventListener("click", (event) => {
+      const suggestion = event.target.closest("[data-med-suggestion]");
+      if (suggestion && medSuggestion) {
+        const pet = currentPet();
+        const field = suggestion.dataset.medSuggestionField || medSuggestion.field;
+        pet.medications[medSuggestion.index][field] = suggestion.dataset.medSuggestion || "";
+        const target = el.medicationRows.querySelector(`[data-med-field="${field}"][data-med-index="${medSuggestion.index}"]`);
+        if (target) {
+          target.value = suggestion.dataset.medSuggestion || "";
+          target.focus();
+        }
+        updateMedicationSuggestionHost(medSuggestion.index, field, suggestion.dataset.medSuggestion || "");
+        return;
+      }
+      const menu = event.target.closest("[data-med-menu]");
+      if (menu) {
+        toggleMenu(`med-menu-${menu.dataset.medMenu}`);
+        return;
+      }
+      const edit = event.target.closest("[data-med-edit]");
+      if (edit) {
+        closeMenus();
+        medicationEditIndex = Number(edit.dataset.medEdit);
+        renderMedications();
+        el.medicationRows.querySelector(`[data-med-field="name"][data-med-index="${edit.dataset.medEdit}"]`)?.focus();
+        return;
+      }
+      const save = event.target.closest("[data-med-save]");
+      if (save) {
+        const index = Number(save.dataset.medSave);
+        const item = currentPet().medications[index];
+        if (item?.assignedListId) {
+          const list = state.lists.find((entry) => entry.id === item.assignedListId);
+          if (list) {
+            const durationText = item.durationStart || item.durationEnd ? `Treatment: ${item.durationStart || "start"} to ${item.durationEnd || "end"}` : "";
+            list.tasks.push({
+              id: uid(),
+              text: [medicationTaskLabel(item), durationText].filter(Boolean).join(" - "),
+              status: "pending",
+              time: item.assignedTime || "",
+              repeat: "",
+              order: list.tasks.length + 1
+            });
+          }
+        }
+        medicationEditIndex = null;
+        saveState();
+        renderMedications();
+        setMessage("Medication saved.");
+        return;
+      }
+      const retire = event.target.closest("[data-med-retire]");
+      if (retire) {
+        closeMenus();
+        const index = Number(retire.dataset.medRetire);
+        const item = currentPet().medications[index];
+        currentPet().medicationHistory.unshift({ ...item, selected: false, retiredAt: today() });
+        currentPet().medications.splice(index, 1);
+        if (!currentPet().medications.length) currentPet().medications.push({ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" });
+        medicationEditIndex = null;
+        renderMedications();
+        renderMedicationHistory();
+        return;
+      }
+      const del = event.target.closest("[data-med-delete]");
+      if (del) {
+        closeMenus();
+        currentPet().medications.splice(Number(del.dataset.medDelete), 1);
+        if (!currentPet().medications.length) currentPet().medications.push({ name: "", dosage: "", durationStart: "", durationEnd: "", assignedListId: "", assignedTime: "", instructions: "", purpose: "" });
+        medicationEditIndex = null;
+        renderMedications();
+      }
+    });
+
+    el.historyMedicationList.addEventListener("change", (event) => {
+      const checkbox = event.target.closest("[data-history-select]");
+      if (!checkbox) return;
+      const [retiredAt, name] = String(checkbox.dataset.historySelect || "").split("|");
+      const item = currentPet().medicationHistory.find((entry) => entry.retiredAt === retiredAt && (entry.name || "") === name);
+      if (!item) return;
+      item.selected = checkbox.checked;
+      renderMedicationHistory();
+    });
+
+    byId("deleteHistoryMedicationButton").addEventListener("click", () => {
+      const pet = currentPet();
+      pet.medicationHistory = pet.medicationHistory.filter((item) => !item.selected);
+      renderMedicationHistory();
+    });
+
+    byId("selectAllHistoryMedication").addEventListener("change", (event) => {
+      currentPet().medicationHistory.forEach((item) => {
+        item.selected = event.target.checked;
+      });
+      renderMedicationHistory();
+    });
+
+    byId("exportHistoryMedicationButton").addEventListener("click", () => {
+      const selected = currentPet().medicationHistory.filter((item) => item.selected);
+      if (!selected.length) {
+        setMessage("Select at least one historical medication item to export.");
+        return;
+      }
+      const html = `
+        <html>
+          <head><meta charset="utf-8"><title>Medication History Export</title></head>
+          <body>
+            <h1>Medication History</h1>
+            ${selected.map((item) => `
+              <section style="margin-bottom:16px;">
+                <h2>${escape(item.name || "Untitled medication")}</h2>
+                <p>Retired: ${escape(formatDate(item.retiredAt))}</p>
+                <p>Dosage: ${escape(item.dosage || "Not recorded")}</p>
+                <p>Duration: ${escape(item.durationStart || item.durationEnd ? `${item.durationStart || "Start not recorded"} to ${item.durationEnd || "End not recorded"}` : "Not recorded")}</p>
+                <p>Instructions: ${escape(item.instructions || "Not recorded")}</p>
+                <p>Purpose: ${escape(item.purpose || "Not recorded")}</p>
+              </section>
+            `).join("")}
+          </body>
+        </html>
+      `;
+      const blob = new Blob([html], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "medication-history-export.doc";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    byId("confirmAssignButton").addEventListener("click", () => {
+      const list = state.lists.find((item) => item.id === el.assignListSelect.value);
+      if (!list) return;
+      const text = el.assignTaskPreview.value.trim();
+      if (!text) return;
+      list.tasks.push({ id: uid(), text, status: "pending", time: el.assignTaskTime.value || "", order: list.tasks.length + 1 });
+      saveState();
+      closeAssignModal();
+      renderPlanner();
+      setMessage("Item assigned to care list.");
+    });
+
+    document.querySelectorAll("[data-close-modal]").forEach((button) => {
+      button.addEventListener("click", () => closeModal(button.dataset.closeModal));
+    });
+
+    document.querySelectorAll(".modal").forEach((modal) => {
+      modal.addEventListener("click", (event) => {
+        if (event.target !== modal) return;
+        modal.hidden = true;
+        if (modal.id === "assignModal") closeAssignModal();
+      });
+    });
+
+    render();
+    setMessage("");
+  </script>
+</body>
+</html>
